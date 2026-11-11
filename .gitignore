@@ -7,3 +7,6 @@ __pycache__/
 plugin-data/
 *.log
 .DS_Store
+
+# generated hand-off artifact
+*.bundle
