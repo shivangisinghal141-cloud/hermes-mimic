@@ -1,5 +1,7 @@
 # MIMIC
 
+[![tests](https://github.com/shivangisinghal141-cloud/hermes-mimic/actions/workflows/tests.yml/badge.svg)](https://github.com/shivangisinghal141-cloud/hermes-mimic/actions/workflows/tests.yml)
+
 **Show it once, then it never needs the model again.**
 
 MIMIC is a [Hermes](https://hermes-agent.nousresearch.com) plugin. You perform a browser
@@ -184,6 +186,34 @@ next run is free again.
 - **Lightweight QA** — record the critical journey, re-run after each deploy; a renamed
   button heals instead of failing the suite.
 - **Personal rituals** — statements → accounting software, client portal status checks.
+
+## Troubleshooting
+
+**`git@github.com: Permission denied (publickey)`** — the deploy key is not attached to that
+repository. Repo → *Settings* → *Deploy keys* → *Add deploy key*, tick **Allow write access**
+for pushes, and check the saved row's fingerprint. Verify with `ssh -T git@github.com`: a
+working key greets you with `Hi <owner>/<repo>!`, even when the repo is private.
+
+**`src refspec main does not match any`** — the bundle's branch is named
+`freebuff/<chat-id>`, not `main`. Rename it before pushing:
+
+```
+git clone mimic.bundle hermes-mimic && cd hermes-mimic
+git branch -M main
+git remote set-url origin git@github.com:<owner>/hermes-mimic.git
+git push -u origin main
+```
+
+**`could not read Username for 'https://github.com'`** — no credential helper is configured
+for HTTPS. Use the SSH URL above, or let your OS keychain hold a personal access token; never
+put a token in a tracked file or in the remote URL.
+
+**`! [rejected] main -> main (non-fast-forward)`** — the remote already has commits this
+branch does not. Run `git pull --rebase origin main` and push again, or
+`git push --force-with-lease` only if you intend to discard the remote history.
+
+**The tests badge shows "no status"** — the `tests` workflow has never run on that repo. It
+appears after the first push, and a private repo shows no badge to anyone who is not signed in.
 
 ## Limitations (honest ones)
 
