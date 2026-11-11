@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Northwind AP — New invoice</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f6f8;
+        color: #14171f;
+      }
+      header {
+        padding: 20px 28px;
+        background: #14171f;
+        color: #fff;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      header h1 { font-size: 17px; margin: 0; letter-spacing: 0.2px; }
+      header span { color: #9aa4b2; font-size: 13px; }
+      main { max-width: 680px; margin: 28px auto; padding: 0 20px 40px; }
+      form {
+        background: #fff;
+        border: 1px solid #e3e6eb;
+        border-radius: 10px;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 20px;
+      }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field.wide { grid-column: 1 / -1; }
+      label { font-size: 13px; font-weight: 600; color: #3d4452; }
+      input, select, textarea {
+        font: inherit;
+        padding: 9px 11px;
+        border: 1px solid #cfd5de;
+        border-radius: 7px;
+        background: #fff;
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: 2px solid #2f6fed;
+        outline-offset: 1px;
+        border-color: #2f6fed;
+      }
+      textarea { min-height: 76px; resize: vertical; }
+      .actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+      button.primary {
+        font: inherit;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: 7px;
+        border: 0;
+        background: #2f6fed;
+        color: #fff;
+        cursor: pointer;
+      }
+      button.primary:hover { background: #245bd0; }
+      #result {
+        grid-column: 1 / -1;
+        margin: 4px 0 0;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #ecfdf3;
+        border: 1px solid #b7ebc9;
+        color: #10623b;
+        font-size: 14px;
+      }
+      #result:empty { display: none; }
+      .hint { color: #6b7484; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Northwind AP</h1>
+      <span>New invoice</span>
+    </header>
+    <main>
+      <form id="invoice-form" novalidate>
+        <div class="field">
+          <label for="customer">Customer</label>
+          <input id="customer" name="customer" placeholder="Acme Ltd" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="invoice_number">Invoice number</label>
+          <input id="invoice_number" name="invoice_number" placeholder="INV-1001" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="amount">Amount</label>
+          <input id="amount" name="amount" type="number" step="0.01" placeholder="1200" />
+        </div>
+        <div class="field">
+          <label for="terms">Payment terms</label>
+          <select id="terms" name="terms">
+            <option value="net15">Net 15</option>
+            <option value="net30" selected>Net 30</option>
+            <option value="net45">Net 45</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes" placeholder="Anything the approver should know"></textarea>
+        </div>
+        <div class="actions">
+          <button id="create-invoice" class="primary" type="submit">Create invoice</button>
+          <span class="hint">Posts to the (fake) AP ledger.</span>
+        </div>
+        <div id="result" role="status" aria-live="polite"></div>
+      </form>
+    </main>
+    <script>
+      const form = document.getElementById("invoice-form");
+      const result = document.getElementById("result");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const customer = form.customer.value.trim();
+        const number = form.invoice_number.value.trim();
+        const amount = form.amount.value.trim();
+        const terms = form.terms.value;
+        if (!customer || !number) {
+          result.style.background = "#fef2f2";
+          result.style.borderColor = "#fecaca";
+          result.style.color = "#991b1b";
+          result.textContent = "Customer and invoice number are required.";
+          return;
+        }
+        result.style.background = "";
+        result.style.borderColor = "";
+        result.style.color = "";
+        result.textContent =
+          "Invoice " + number + " created for " + customer +
+          " — $" + (amount || "0") + " (terms: " + terms + ")";
+      });
+    </script>
+  </body>
+</html>

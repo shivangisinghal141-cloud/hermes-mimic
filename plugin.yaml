@@ -1,0 +1,57 @@
+name: mimic
+version: 0.1.0
+manifest_version: 2
+api_version: 1
+license: MIT
+description: >-
+  Record a browser workflow once, compile it into a deterministic parameterized
+  tool, and register that tool live. MIMIC then runs the workflow with zero LLM
+  calls; when a site changes and one step breaks, it hands that step plus a DOM
+  snapshot to the model, patches the macro, and resumes from the checkpoint.
+author: shivangisinghal141-cloud
+homepage: https://github.com/shivangisinghal141-cloud/hermes-mimic
+tags: [browser, automation, record-replay, playwright, self-healing, forms]
+
+provides_tools:
+  - mimic_record_start
+  - mimic_record_stop
+  - mimic_run
+  - mimic_list
+  - mimic_show
+  - mimic_heal
+  - mimic_delete
+
+provides_hooks:
+  - on_skill_lifecycle
+
+python_dependencies:
+  - "playwright>=1.40"
+
+capabilities: []
+
+config_schema:
+  headless:
+    type: bool
+    default: true
+    label: Headless
+    description: Run the automation browser without a window. Turn off to watch MIMIC work.
+  cdp_url:
+    type: str
+    default: ""
+    label: CDP URL
+    description: Attach to an already-running Chrome (e.g. http://127.0.0.1:9222) instead of launching one.
+  strict:
+    type: bool
+    default: true
+    label: Strict selectors
+    description: Treat a degraded selector (primary broken, fallback matched) as drift and repair it.
+  heal:
+    type: bool
+    default: true
+    label: Self-healing
+    description: Allow one model re-grounding call when a step breaks.
+  step_timeout_ms:
+    type: int
+    default: 4000
+    label: Step timeout (ms)
+    description: How long one step may wait for its element before it is considered broken.
