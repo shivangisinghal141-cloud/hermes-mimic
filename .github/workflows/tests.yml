@@ -17,10 +17,32 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # tags are needed to compare plugin.yaml with the latest release
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Check plugin.yaml version against the latest tag
+        run: |
+          VERSION="$(sed -n 's/^version:[[:space:]]*//p' plugin.yaml | tr -d '"' | head -n 1 | tr -d '[:space:]')"
+          LATEST="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          echo "plugin.yaml : $VERSION"
+          echo "latest tag  : ${LATEST:-<none>}"
+          if [ -z "$VERSION" ]; then
+            echo "::error::no version: line found in plugin.yaml"
+            exit 1
+          fi
+          if [ -z "$LATEST" ]; then
+            echo "no v* tag yet - nothing to compare"
+            exit 0
+          fi
+          if [ "$LATEST" != "v$VERSION" ]; then
+            echo "::error::plugin.yaml says $VERSION but the latest tag is $LATEST - tag the new version or bump plugin.yaml"
+            exit 1
+          fi
+          echo "aligned: plugin.yaml $VERSION == $LATEST"
 
       - name: Install plugin runtime and test dependencies
         run: |
