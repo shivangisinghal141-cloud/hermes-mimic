@@ -1,0 +1,54 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install plugin runtime and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "playwright>=1.40" pytest
+
+      - name: Install Chromium for the end-to-end test
+        run: python -m playwright install --with-deps chromium
+
+      - name: Check the plugin loads and registers its tools
+        run: |
+          python - <<'PY'
+          import importlib.util, sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          spec = importlib.util.spec_from_file_location(
+              "mimic", root / "__init__.py", submodule_search_locations=[str(root)]
+          )
+          module = importlib.util.module_from_spec(spec)
+          sys.modules["mimic"] = module
+          spec.loader.exec_module(module)
+
+          tools = module.CORE_TOOLS
+          assert len(tools) == 7, tools
+          assert callable(module.register)
+          print("loaded mimic, tools:", sorted(tools))
+          PY
+
+      - name: Run the test suite
+        run: python -m pytest -q
