@@ -1,0 +1,6 @@
+# Development-only paths: excluded from `git archive` (and therefore the release zip).
+.gitattributes  export-ignore
+.github/        export-ignore
+tests/          export-ignore
+pytest.ini      export-ignore
+.gitignore      export-ignore

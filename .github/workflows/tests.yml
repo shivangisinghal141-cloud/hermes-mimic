@@ -72,5 +72,21 @@ jobs:
           print("loaded mimic, tools:", sorted(tools))
           PY
 
+      - name: Build the plugin zip
+        run: |
+          VERSION="$(python -c "import re,pathlib;print(re.search(r'^version:\s*(\S+)',pathlib.Path('plugin.yaml').read_text(),re.M).group(1))")"
+          mkdir -p dist
+          git archive --format=zip --prefix="mimic-${VERSION}/" -o "dist/mimic-${VERSION}.zip" HEAD
+          echo "ZIP=dist/mimic-${VERSION}.zip" >> "$GITHUB_ENV"
+          ls -lh "dist/mimic-${VERSION}.zip"
+
+      - name: Upload the plugin zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: mimic-plugin-zip
+          path: ${{ env.ZIP }}
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Run the test suite
         run: python -m pytest -q
