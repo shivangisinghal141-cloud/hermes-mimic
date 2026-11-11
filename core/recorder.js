@@ -17,8 +17,20 @@
   const MAX_EVENTS = 2000;
   const LOG = [];
 
-  function emit(event) {
-    event.ts = Date.now();
+  // Strictly increasing interaction clock. Date.now() has millisecond resolution,
+  // so two events fired inside the same tick would tie and could be re-ordered by
+  // the sort in recorder.py; bumping guarantees a total order.
+  let LAST_TS = 0;
+  function stamp() {
+    const now = Date.now();
+    LAST_TS = now > LAST_TS ? now : LAST_TS + 1;
+    return LAST_TS;
+  }
+
+  function emit(event, ts) {
+    // Stamp the interaction time, not the flush time: a debounced fill must keep
+    // its place in the sequence or a later select/change would sort ahead of it.
+    if (!event.ts) event.ts = ts || stamp();
     if (LOG.length >= MAX_EVENTS) LOG.shift();
     LOG.push(event);
     try {
@@ -268,17 +280,18 @@
     clearTimeout(entry.timer);
     const descriptor = entry.descriptor || describe(el);
     if (!descriptor) return;
+    const ts = entry.ts || stamp();
     const tag = el.tagName.toLowerCase();
     if (tag === 'select') {
-      emit({ kind: 'select', value: el.value, target: descriptor });
+      emit({ kind: 'select', value: el.value, target: descriptor }, ts);
       return;
     }
     if (el.type === 'checkbox' || el.type === 'radio') {
-      emit({ kind: 'check', checked: !!el.checked, target: descriptor });
+      emit({ kind: 'check', checked: !!el.checked, target: descriptor }, ts);
       return;
     }
     const value = typeof el.value === 'string' ? el.value : clean(el.innerText);
-    emit({ kind: 'fill', value, target: descriptor });
+    emit({ kind: 'fill', value, target: descriptor }, ts);
   }
 
   document.addEventListener(
@@ -291,6 +304,7 @@
       if (!(tag === 'input' || tag === 'textarea' || el.isContentEditable)) return;
       const entry = pending.get(el) || { descriptor: describe(el), timer: null };
       entry.descriptor = describe(el);
+      entry.ts = stamp();
       clearTimeout(entry.timer);
       entry.timer = setTimeout(() => flushField(el), 400);
       pending.set(el, entry);
@@ -305,7 +319,7 @@
       if (!el || el.nodeType !== 1) return;
       const tag = el.tagName.toLowerCase();
       if (!['select', 'input', 'textarea'].includes(tag)) return;
-      if (!pending.has(el)) pending.set(el, { descriptor: describe(el), timer: null });
+      if (!pending.has(el)) pending.set(el, { descriptor: describe(el), timer: null, ts: stamp() });
       flushField(el);
     },
     true
