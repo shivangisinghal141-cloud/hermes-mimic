@@ -51,6 +51,7 @@ DEFAULTS: Dict[str, Any] = {
     "strict": True,
     "heal": True,
     "step_timeout_ms": 4000,
+    "native_browser": False,
 }
 
 ENV_KEYS = {
@@ -59,11 +60,12 @@ ENV_KEYS = {
     "MIMIC_STRICT": "strict",
     "MIMIC_HEAL": "heal",
     "MIMIC_STEP_TIMEOUT_MS": "step_timeout_ms",
+    "MIMIC_NATIVE_BROWSER": "native_browser",
 }
 
 
 def _coerce(key: str, value: Any) -> Any:
-    if key in ("headless", "strict", "heal"):
+    if key in ("headless", "strict", "heal", "native_browser"):
         if isinstance(value, str):
             return value.strip().lower() not in ("", "0", "false", "no", "off")
         return bool(value)
@@ -187,6 +189,7 @@ class MimicPlugin:
                     headless=bool(self.cfg.get("headless", True)),
                     cdp_url=str(self.cfg.get("cdp_url") or ""),
                     profile_dir=self.store.browser_dir,
+                    native_browser=bool(self.cfg.get("native_browser", False)),
                 )
                 atexit.register(self.shutdown)
             return self.session
