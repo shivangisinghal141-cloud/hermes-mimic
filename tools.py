@@ -114,6 +114,33 @@ def _heal(plugin: Any, args: Dict[str, Any]) -> str:
     return ok(**result)
 
 
+def _export_n8n(plugin: Any, args: Dict[str, Any]) -> str:
+    from .core.n8n import export_to_file
+
+    name = args.get("name")
+    macro = plugin.get_macro(name)
+    if macro is None:
+        return err(
+            f"no macro named {name!r}",
+            macros=[item["tool"] for item in plugin.store.summaries()],
+        )
+    path = (args.get("path") or "").strip()
+    if not path:
+        exports_dir = plugin.store.root / "exports"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        path = str(exports_dir / f"{macro.get('name', 'macro')}.n8n.json")
+    written = export_to_file(macro, path)
+    return ok(
+        exported=macro.get("name"),
+        file=written,
+        hint=(
+            "Import in n8n: Workflows → Import from file. "
+            "Swap the Manual Trigger for a Schedule, Webhook, or Spreadsheet File trigger "
+            "to run this workflow automatically with live data."
+        ),
+    )
+
+
 def _delete(plugin: Any, args: Dict[str, Any]) -> str:
     if not bool(args.get("confirm")):
         return err("refusing to delete without confirm=true")
@@ -165,4 +192,5 @@ def build_handlers(plugin: Any) -> Dict[str, Callable[..., str]]:
         "mimic_show": wrap(_show),
         "mimic_heal": wrap(_heal),
         "mimic_delete": wrap(_delete),
+        "mimic_export_n8n": wrap(_export_n8n),
     }

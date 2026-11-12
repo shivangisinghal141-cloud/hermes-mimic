@@ -20,6 +20,7 @@ provides_tools:
   - mimic_show
   - mimic_heal
   - mimic_delete
+  - mimic_export_n8n
 
 provides_hooks:
   - on_skill_lifecycle
