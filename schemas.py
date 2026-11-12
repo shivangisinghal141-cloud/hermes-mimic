@@ -147,4 +147,35 @@ DELETE: Dict[str, Any] = {
     },
 }
 
-CORE_SCHEMAS: List[Dict[str, Any]] = [RECORD_START, RECORD_STOP, RUN, LIST, SHOW, HEAL, DELETE]
+ATTACH_BROWSER: Dict[str, Any] = {
+    "name": "mimic_attach_browser",
+    "description": (
+        "Attach MIMIC to your real browser so it records and replays with your actual logins, "
+        "cookies, and sessions — no manual login needed. "
+        "Probes CDP ports 9222-9225 for a browser already running with --remote-debugging-port. "
+        "If none is found, returns the exact command to launch Chrome/Edge with CDP enabled. "
+        "Once attached, all subsequent record/run calls use that browser. "
+        "Use this before mimic_record_start when the target site requires authentication."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "port": {
+                "type": "integer",
+                "description": "CDP port to probe/use (default: 9222).",
+                "default": 9222,
+            },
+            "import_profile": {
+                "type": "boolean",
+                "description": (
+                    "If no live browser is found, copy cookies and local storage from your real "
+                    "Chrome profile into the MIMIC Playwright profile as a one-time bootstrap. "
+                    "Default true."
+                ),
+                "default": True,
+            },
+        },
+    },
+}
+
+CORE_SCHEMAS: List[Dict[str, Any]] = [RECORD_START, RECORD_STOP, RUN, LIST, SHOW, HEAL, DELETE, ATTACH_BROWSER]

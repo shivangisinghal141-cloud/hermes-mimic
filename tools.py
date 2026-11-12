@@ -114,6 +114,65 @@ def _heal(plugin: Any, args: Dict[str, Any]) -> str:
     return ok(**result)
 
 
+def _attach_browser(plugin: Any, args: Dict[str, Any]) -> str:
+    from .core.native_browser import (
+        discover_cdp_url,
+        import_profile,
+        launch_instructions,
+        _probe_cdp,
+    )
+
+    port = int(args.get("port") or 9222)
+    do_import = args.get("import_profile", True)
+
+    # 1. Try the requested port first, then all probe ports.
+    cdp_url = _probe_cdp(port)
+    if cdp_url is None:
+        cdp_url = discover_cdp_url()
+
+    if cdp_url:
+        # Patch the live plugin config so the next browser() call uses this URL.
+        plugin.cfg["cdp_url"] = cdp_url
+        # Close any existing session so the new config is picked up.
+        with plugin.lock:
+            if plugin.session is not None:
+                try:
+                    plugin.session.close()
+                except Exception:
+                    pass
+                plugin.session = None
+        return ok(
+            attached=True,
+            cdp_url=cdp_url,
+            hint=(
+                "MIMIC is now attached to your real browser. "
+                "Call mimic_record_start to begin recording with your existing logins."
+            ),
+        )
+
+    # 2. No live browser found — try profile import if requested.
+    imported = False
+    if do_import:
+        imported = import_profile(plugin.store.browser_dir)
+
+    return ok(
+        attached=False,
+        imported_profile=imported,
+        launch_instructions=launch_instructions(port),
+        hint=(
+            (
+                "Your real browser profile (cookies, local storage) has been copied into the "
+                "MIMIC Playwright profile. Call mimic_record_start — you will already be logged in."
+            )
+            if imported
+            else (
+                "No browser found on CDP ports. Follow the launch_instructions above, then call "
+                "mimic_attach_browser again."
+            )
+        ),
+    )
+
+
 def _delete(plugin: Any, args: Dict[str, Any]) -> str:
     if not bool(args.get("confirm")):
         return err("refusing to delete without confirm=true")
@@ -165,4 +224,5 @@ def build_handlers(plugin: Any) -> Dict[str, Callable[..., str]]:
         "mimic_show": wrap(_show),
         "mimic_heal": wrap(_heal),
         "mimic_delete": wrap(_delete),
+        "mimic_attach_browser": wrap(_attach_browser),
     }

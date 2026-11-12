@@ -29,10 +29,12 @@ class BrowserSession:
         headless: bool = True,
         cdp_url: str = "",
         profile_dir: Optional[Path] = None,
+        native_browser: bool = False,
     ) -> None:
         self.headless = bool(headless)
         self.cdp_url = (cdp_url or "").strip()
         self.profile_dir = Path(profile_dir) if profile_dir else None
+        self.native_browser = bool(native_browser)
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread = None
         self._ready = None
@@ -96,14 +98,35 @@ class BrowserSession:
             if extra:
                 args.extend(part for part in extra.split() if part)
             viewport: Dict[str, int] = {"width": 1280, "height": 900}
-            if self.cdp_url:
+
+            # Resolve CDP URL: explicit config → auto-discovery when native_browser=true
+            cdp_url = self.cdp_url
+            if not cdp_url and self.native_browser:
+                from .native_browser import discover_cdp_url
+                cdp_url = discover_cdp_url() or ""
+                if cdp_url:
+                    logger.info("mimic: auto-discovered browser at %s", cdp_url)
+                else:
+                    from .native_browser import launch_instructions
+                    logger.warning(
+                        "mimic: native_browser=true but no browser found on CDP ports. "
+                        "%s",
+                        launch_instructions(),
+                    )
+
+            if cdp_url:
                 # Attach to a browser the user already has open (their own session,
                 # their own cookies) instead of launching a fresh profile.
-                self._browser = await self._pw.chromium.connect_over_cdp(self.cdp_url)
+                self._browser = await self._pw.chromium.connect_over_cdp(cdp_url)
                 contexts = list(self._browser.contexts)
                 self._context = contexts[0] if contexts else await self._browser.new_context()
             elif self.profile_dir is not None:
                 self.profile_dir.mkdir(parents=True, exist_ok=True)
+                # Bootstrap the Playwright profile from the real browser on first run
+                # when native_browser=true so the user is already logged in.
+                if self.native_browser:
+                    from .native_browser import import_profile
+                    import_profile(self.profile_dir)
                 self._context = await self._pw.chromium.launch_persistent_context(
                     user_data_dir=str(self.profile_dir),
                     headless=self.headless,
