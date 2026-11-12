@@ -147,4 +147,29 @@ DELETE: Dict[str, Any] = {
     },
 }
 
-CORE_SCHEMAS: List[Dict[str, Any]] = [RECORD_START, RECORD_STOP, RUN, LIST, SHOW, HEAL, DELETE]
+EXPORT_N8N: Dict[str, Any] = {
+    "name": "mimic_export_n8n",
+    "description": (
+        "Export a learned macro as an importable n8n workflow JSON file. "
+        "Every recorded step becomes an n8n Playwright node; params become "
+        "={{ $json.<param> }} expressions so a Schedule, Webhook, or Spreadsheet "
+        "trigger can drive the workflow with live data. "
+        "Import in n8n via Workflows → Import from file."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "Macro name or tool name to export."},
+            "path": {
+                "type": "string",
+                "description": (
+                    "File path to write the n8n JSON to, e.g. ~/Downloads/invoice_entry.n8n.json. "
+                    "Defaults to <data_dir>/exports/<name>.n8n.json."
+                ),
+            },
+        },
+        "required": ["name"],
+    },
+}
+
+CORE_SCHEMAS: List[Dict[str, Any]] = [RECORD_START, RECORD_STOP, RUN, LIST, SHOW, HEAL, DELETE, EXPORT_N8N]
